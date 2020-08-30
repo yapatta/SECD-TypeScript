@@ -1,9 +1,6 @@
 (() => {
   const ENTER_KEY = 13;
 
-  interface ArrayConstructor {
-    from(arrayLike: any, mapFn?, thisArg?): Array<any>;
-  }
   // State of SECD Machine
   interface SECD {
     S: Array<any>;
@@ -12,33 +9,7 @@
     D: Array<SECD>;
   }
 
-  type Lambda = App | Func | Var;
-
-  // Application
-  interface App {
-    func: Lambda;
-    var: Lambda;
-  }
-
-  // Variable
-  interface Var {
-    name: string;
-    val: number;
-  }
-
-  // Abstraction
-  interface Func {
-    arg: Var;
-    body: Lambda;
-  }
-
-  // Closure
-  interface Closure {
-    func: Func;
-    env: Object;
-  }
-
-  const MySecd = () => {
+  const MySECD = () => {
     const id = 1;
     const txtInput = <HTMLInputElement>document.getElementById("txtInput");
     const divResults = document.getElementById("divResults");
@@ -62,9 +33,17 @@
           console.log("--- End SECD ---");
         }
       };
-    };
 
-    // ex: app:{func:{arg:'x',body:'x'},var:{name:'a',val:3}}
+      const sideBar = document.getElementById("divSidebar");
+
+      Array.from(sideBar.getElementsByTagName("span")).forEach((element) => {
+        element.onclick = () => {
+          console.log(element.innerHTML);
+          txtInput.value = element.innerHTML;
+          txtInput.focus();
+        };
+      });
+    };
 
     const parseCode = (inputCode: string): object => {
       console.log("input val: ", inputCode);
@@ -131,7 +110,6 @@
       const newC = Object.create(d.C);
       const newD = Array.from(d.D);
 
-      // 次の状態でもうsecd.Sは関係ない
       newS.push(secd.S.pop());
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
@@ -182,7 +160,7 @@
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
-    // hd Cが'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
+    // hd C is 'ap' and hd S is a closure having env and bv X
     const executeDefFour = (secd: SECD): SECD => {
       // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
       const firstS = secd.S.pop();
@@ -216,10 +194,10 @@
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
-    // hd Cが記号'ap'かつhd Sがclosureでないとき
+    // hd C is 'ap' and hd S is not a closure
     // (S, E, C, D) -> (((1st S)(2nd S):tl(tl S)), E, tl C, D)
     const executeDefFive = (secd: SECD): SECD => {
-      // ((1st S)(2nd S):tl(tl S))ってSと変わんなくね
+      // ((1st S)(2nd S):tl(tl S)) is same as S
       const newS = Array.from(secd.S);
       const newE = Object.create(secd.E);
       secd.C.pop();
@@ -254,24 +232,24 @@
     const secdLogger = (secd: SECD) => {
       console.log("------ SECD Logger Start ------");
 
-      // S
+      // Stack
       console.log("--- S Start ---");
-      secd.S.forEach((element, index) => console.log(JSON.stringify(element)));
+      secd.S.forEach((element) => console.log(JSON.stringify(element)));
       console.log("--- S End ---");
 
-      // E
+      // Environment
       console.log("--- E Start ---");
       console.log(JSON.stringify(secd.E));
       console.log("--- E End ---");
 
-      // C
+      // Control
       console.log("--- C Start ---");
-      secd.C.forEach((element, index) => console.log(JSON.stringify(element)));
+      secd.C.forEach((element) => console.log(JSON.stringify(element)));
       console.log("--- C End ---");
 
-      // D
+      // Dump
       console.log("--- D Start ---");
-      secd.D.forEach((element, index) => console.log(JSON.stringify(element)));
+      secd.D.forEach((element) => console.log(JSON.stringify(element)));
       console.log("--- D End ---");
 
       console.log("------ SECD Logger End ------");
@@ -284,7 +262,7 @@
   };
 
   window.onload = () => {
-    const secd = MySecd();
+    const secd = MySECD();
     secd.init();
     console.log(secd.credit);
   };

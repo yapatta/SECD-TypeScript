@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 (function () {
     var ENTER_KEY = 13;
-    var MySecd = function () {
+    var MySECD = function () {
         var id = 1;
         var txtInput = document.getElementById("txtInput");
         var divResults = document.getElementById("divResults");
@@ -33,8 +33,15 @@ var __assign = (this && this.__assign) || function () {
                     console.log("--- End SECD ---");
                 }
             };
+            var sideBar = document.getElementById("divSidebar");
+            Array.from(sideBar.getElementsByTagName("span")).forEach(function (element) {
+                element.onclick = function () {
+                    console.log(element.innerHTML);
+                    txtInput.value = element.innerHTML;
+                    txtInput.focus();
+                };
+            });
         };
-        // ex: app:{func:{arg:'x',body:'x'},var:{name:'a',val:3}}
         var parseCode = function (inputCode) {
             console.log("input val: ", inputCode);
             var strAst = "return {" + inputCode + "};";
@@ -92,7 +99,6 @@ var __assign = (this && this.__assign) || function () {
             var newE = Object.create(d.E);
             var newC = Object.create(d.C);
             var newD = Array.from(d.D);
-            // 次の状態でもうsecd.Sは関係ない
             newS.push(secd.S.pop());
             return { S: newS, E: newE, C: newC, D: newD };
         };
@@ -134,7 +140,7 @@ var __assign = (this && this.__assign) || function () {
             });
             return { S: newS, E: newE, C: newC, D: newD };
         };
-        // hd Cが'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
+        // hd C is 'ap' and hd S is a closure having env and bv X
         var executeDefFour = function (secd) {
             // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
             var firstS = secd.S.pop();
@@ -161,10 +167,10 @@ var __assign = (this && this.__assign) || function () {
             ];
             return { S: newS, E: newE, C: newC, D: newD };
         };
-        // hd Cが記号'ap'かつhd Sがclosureでないとき
+        // hd C is 'ap' and hd S is not a closure
         // (S, E, C, D) -> (((1st S)(2nd S):tl(tl S)), E, tl C, D)
         var executeDefFive = function (secd) {
-            // ((1st S)(2nd S):tl(tl S))ってSと変わんなくね
+            // ((1st S)(2nd S):tl(tl S)) is same as S
             var newS = Array.from(secd.S);
             var newE = Object.create(secd.E);
             secd.C.pop();
@@ -191,21 +197,21 @@ var __assign = (this && this.__assign) || function () {
         };
         var secdLogger = function (secd) {
             console.log("------ SECD Logger Start ------");
-            // S
+            // Stack
             console.log("--- S Start ---");
-            secd.S.forEach(function (element, index) { return console.log(JSON.stringify(element)); });
+            secd.S.forEach(function (element) { return console.log(JSON.stringify(element)); });
             console.log("--- S End ---");
-            // E
+            // Environment
             console.log("--- E Start ---");
             console.log(JSON.stringify(secd.E));
             console.log("--- E End ---");
-            // C
+            // Control
             console.log("--- C Start ---");
-            secd.C.forEach(function (element, index) { return console.log(JSON.stringify(element)); });
+            secd.C.forEach(function (element) { return console.log(JSON.stringify(element)); });
             console.log("--- C End ---");
-            // D
+            // Dump
             console.log("--- D Start ---");
-            secd.D.forEach(function (element, index) { return console.log(JSON.stringify(element)); });
+            secd.D.forEach(function (element) { return console.log(JSON.stringify(element)); });
             console.log("--- D End ---");
             console.log("------ SECD Logger End ------");
         };
@@ -215,7 +221,7 @@ var __assign = (this && this.__assign) || function () {
         };
     };
     window.onload = function () {
-        var secd = MySecd();
+        var secd = MySECD();
         secd.init();
         console.log(secd.credit);
     };

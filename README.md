@@ -1,6 +1,12 @@
 # SECD Machine Implemented in TypeScript
 
-Exec below command before opening index.html
+Forked from https://github.com/novogeek/SECD-JS
+
+This Implementation is derived from "https://www.cs.cmu.edu/afs/cs/user/crary/www/819-f09/Landin64.pdf" and rewrote original code according to this paper.
+
+Thanks a lot.
+
+Exec below command before opening index.html.
 
 ```
 tsc secd.ts --lib dom,es6
