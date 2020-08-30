@@ -45,7 +45,6 @@ var __assign = (this && this.__assign) || function () {
         var executeSECD = function (code, env) {
             var secd = { S: new Array(), E: env, C: [code], D: new Array() };
             while (secd.C.length) {
-                secdLogger(secd);
                 // define2: if head C is variable
                 if (secd.C[secd.C.length - 1]["var"] !== undefined) {
                     console.log("Def2");
@@ -66,19 +65,19 @@ var __assign = (this && this.__assign) || function () {
                     }
                 }
                 else {
-                    // application: app: {}
                     console.log("Def6");
                     secd = executeDefSix(secd);
                 }
+                secdLogger(secd);
             }
             // C is Empty
             // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
             while (secd.D.length) {
                 console.log("Def1");
-                secdLogger(secd);
                 secd = executeDefOne(secd);
+                secdLogger(secd);
             }
-            return secd.S.pop();
+            return JSON.stringify(secd.S.pop());
         };
         // (S, E, C, D) -> (hs:S', E', C, D')
         // where S', E', C, D' = D
@@ -91,30 +90,27 @@ var __assign = (this && this.__assign) || function () {
             newS.push(secd.S.pop());
             return { S: newS, E: newE, C: secd.C, D: newD };
         };
-        // Cの頭が変数である
+        // hd C is variable
         // (location EXE:S, E, tC, D)
         var executeDefTwo = function (secd) {
             var newS = secd.S;
             var newE = secd.E;
             var newD = secd.D;
-            // headCは{name, val}という情報を持つ
             // S -> location EXE:S
             // C -> tl C
             // ex: headC = {var: {name: 'a', val: 2}}
             var headC = secd.C.pop();
             var newC = secd.C;
-            if (headC["var"].name in Object.keys(secd.E)) {
-                // 環境Eの値を
-                var newHeadC = __assign(__assign({}, headC), { "var": { val: secd.E[headC.name] } });
+            if (headC["var"].name in secd.E) {
+                var newHeadC = { "var": secd.E[headC["var"].name] };
                 newS.push(newHeadC);
             }
             else {
-                // 値をそのまま
                 newS.push(headC);
             }
             return { S: newS, E: newE, C: newC, D: newD };
         };
-        // hd Cがラムダ式のとき
+        // hd C is lambda expression
         var executeDefThree = function (secd) {
             var newS = secd.S;
             var newE = secd.E;
@@ -124,10 +120,10 @@ var __assign = (this && this.__assign) || function () {
             var headC = secd.C.pop();
             var newC = secd.C;
             // closureをpush: {func, env}
-            newS.push({ closure: __assign(__assign({}, headC), { env: secd.E }) });
+            newS.push({ closure: __assign(__assign({}, headC), { env: Object.create(secd.E) }) });
             return { S: newS, E: newE, C: newC, D: newD };
         };
-        // hd Cが記号'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
+        // hd Cが'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
         var executeDefFour = function (secd) {
             // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
             var firstS = secd.S.pop();
@@ -137,9 +133,9 @@ var __assign = (this && this.__assign) || function () {
             // derive(assoc(bv X, 2nd S)) :E1
             // ex: secondS = {var: {name: 'a', val: 2}}
             var secondS = secd.S.pop();
-            var newE = e1;
+            var newE = Object.create(e1);
             newE[arg] = secondS["var"];
-            var firstC = secd.C.pop();
+            secd.C.pop();
             var newS = [];
             var newC = [{ "var": { name: body, val: undefined } }];
             var newD = [{ S: secd.S, E: secd.E, C: secd.C, D: secd.D }];

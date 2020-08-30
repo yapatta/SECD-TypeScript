@@ -73,11 +73,10 @@
       return astObject;
     };
 
-    const executeSECD = (code: any, env: Object): any => {
+    const executeSECD = (code: any, env: Object): string => {
       let secd: SECD = { S: new Array(), E: env, C: [code], D: new Array() };
 
       while (secd.C.length) {
-        secdLogger(secd);
         // define2: if head C is variable
         if (secd.C[secd.C.length - 1].var !== undefined) {
           console.log("Def2");
@@ -94,20 +93,21 @@
             secd = executeDefFive(secd);
           }
         } else {
-          // application: app: {}
           console.log("Def6");
           secd = executeDefSix(secd);
         }
+
+        secdLogger(secd);
       }
       // C is Empty
       // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
       while (secd.D.length) {
         console.log("Def1");
-        secdLogger(secd);
         secd = executeDefOne(secd);
+        secdLogger(secd);
       }
 
-      return secd.S.pop();
+      return JSON.stringify(secd.S.pop());
     };
 
     // (S, E, C, D) -> (hs:S', E', C, D')
@@ -124,33 +124,30 @@
       return { S: newS, E: newE, C: secd.C, D: newD } as SECD;
     };
 
-    // Cの頭が変数である
+    // hd C is variable
     // (location EXE:S, E, tC, D)
     const executeDefTwo = (secd: SECD): SECD => {
       const newS = secd.S;
       const newE = secd.E;
       const newD = secd.D;
 
-      // headCは{name, val}という情報を持つ
       // S -> location EXE:S
       // C -> tl C
       // ex: headC = {var: {name: 'a', val: 2}}
       const headC = secd.C.pop();
       const newC = secd.C;
 
-      if (headC.var.name in Object.keys(secd.E)) {
-        // 環境Eの値を
-        const newHeadC = { ...headC, var: { val: secd.E[headC.name] } };
+      if (headC.var.name in secd.E) {
+        const newHeadC = { var: secd.E[headC.var.name] };
         newS.push(newHeadC);
       } else {
-        // 値をそのまま
         newS.push(headC);
       }
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
-    // hd Cがラムダ式のとき
+    // hd C is lambda expression
     const executeDefThree = (secd: SECD): SECD => {
       const newS = secd.S;
       const newE = secd.E;
@@ -162,12 +159,12 @@
       const newC = secd.C;
 
       // closureをpush: {func, env}
-      newS.push({ closure: { ...headC, env: secd.E } });
+      newS.push({ closure: { ...headC, env: Object.create(secd.E) } });
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
-    // hd Cが記号'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
+    // hd Cが'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
     const executeDefFour = (secd: SECD): SECD => {
       // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
       const firstS = secd.S.pop();
@@ -179,10 +176,10 @@
       // derive(assoc(bv X, 2nd S)) :E1
       // ex: secondS = {var: {name: 'a', val: 2}}
       const secondS = secd.S.pop();
-      const newE = e1;
+      const newE = Object.create(e1);
       newE[arg] = secondS.var;
 
-      const firstC = secd.C.pop();
+      secd.C.pop();
 
       const newS = [];
       const newC = [{ var: { name: body, val: undefined } }];

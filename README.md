@@ -1,6 +1,6 @@
-# SECD Machine Implementation in TypeScript
+# SECD Machine Implemented in TypeScript
 
-Before opening index.html
+Exec below command before opening index.html
 
 ```
 tsc secd.ts
