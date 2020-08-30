@@ -44,38 +44,43 @@ var __assign = (this && this.__assign) || function () {
         };
         var executeSECD = function (code, env) {
             var secd = { S: new Array(), E: env, C: [code], D: new Array() };
-            while (secd.C.length) {
-                // define2: if head C is variable
-                if (secd.C[secd.C.length - 1]["var"] !== undefined) {
-                    console.log("Def2");
-                    secd = executeDefTwo(secd);
-                }
-                else if (secd.C[secd.C.length - 1].func !== undefined) {
-                    console.log("Def3");
-                    secd = executeDefThree(secd);
-                }
-                else if (secd.C[secd.C.length - 1] === "ap") {
-                    if (secd.S[secd.S.length - 1].closure !== undefined) {
-                        console.log("Def4");
-                        secd = executeDefFour(secd);
+            while (!(secd.S.length === 1 &&
+                Object.keys(secd.E).length === 0 &&
+                secd.C.length === 0 &&
+                secd.D.length === 0)) {
+                while (secd.C.length) {
+                    // define2: if head C is variable
+                    if (secd.C[secd.C.length - 1]["var"] !== undefined) {
+                        console.log("Def2");
+                        secd = executeDefTwo(secd);
+                    }
+                    else if (secd.C[secd.C.length - 1].func !== undefined) {
+                        console.log("Def3");
+                        secd = executeDefThree(secd);
+                    }
+                    else if (secd.C[secd.C.length - 1] === "ap") {
+                        if (secd.S[secd.S.length - 1].closure !== undefined) {
+                            console.log("Def4");
+                            secd = executeDefFour(secd);
+                        }
+                        else {
+                            console.log("Def5");
+                            secd = executeDefFive(secd);
+                        }
                     }
                     else {
-                        console.log("Def5");
-                        secd = executeDefFive(secd);
+                        console.log("Def6");
+                        secd = executeDefSix(secd);
                     }
+                    secdLogger(secd);
                 }
-                else {
-                    console.log("Def6");
-                    secd = executeDefSix(secd);
+                // C is Empty
+                // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
+                while (secd.D.length) {
+                    console.log("Def1");
+                    secd = executeDefOne(secd);
+                    secdLogger(secd);
                 }
-                secdLogger(secd);
-            }
-            // C is Empty
-            // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
-            while (secd.D.length) {
-                console.log("Def1");
-                secd = executeDefOne(secd);
-                secdLogger(secd);
             }
             return JSON.stringify(secd.S.pop());
         };
@@ -83,24 +88,25 @@ var __assign = (this && this.__assign) || function () {
         // where S', E', C, D' = D
         var executeDefOne = function (secd) {
             var d = secd.D.pop();
-            var newS = d.S;
-            var newE = d.E;
-            var newD = d.D;
+            var newS = Array.from(d.S);
+            var newE = Object.create(d.E);
+            var newC = Object.create(d.C);
+            var newD = Array.from(d.D);
             // 次の状態でもうsecd.Sは関係ない
             newS.push(secd.S.pop());
-            return { S: newS, E: newE, C: secd.C, D: newD };
+            return { S: newS, E: newE, C: newC, D: newD };
         };
         // hd C is variable
         // (location EXE:S, E, tC, D)
         var executeDefTwo = function (secd) {
-            var newS = secd.S;
-            var newE = secd.E;
-            var newD = secd.D;
+            var newS = Array.from(secd.S);
+            var newE = Object.create(secd.E);
+            var newD = Array.from(secd.D);
             // S -> location EXE:S
             // C -> tl C
             // ex: headC = {var: {name: 'a', val: 2}}
             var headC = secd.C.pop();
-            var newC = secd.C;
+            var newC = Array.from(secd.C);
             if (headC["var"].name in secd.E) {
                 var newHeadC = { "var": secd.E[headC["var"].name] };
                 newS.push(newHeadC);
@@ -112,22 +118,27 @@ var __assign = (this && this.__assign) || function () {
         };
         // hd C is lambda expression
         var executeDefThree = function (secd) {
-            var newS = secd.S;
-            var newE = secd.E;
-            var newD = secd.D;
+            var newS = Array.from(secd.S);
+            var newE = Object.create(secd.E);
+            var newD = Array.from(secd.D);
             // C -> tl C
             // ex: headC = {func: {arg: 'x', body: 'x'}}
             var headC = secd.C.pop();
-            var newC = secd.C;
+            var newC = Array.from(secd.C);
             // closureをpush: {func, env}
-            newS.push({ closure: __assign(__assign({}, headC), { env: Object.create(secd.E) }) });
+            newS.push({
+                closure: {
+                    func: __assign({}, headC.func),
+                    env: __assign({}, secd.E)
+                }
+            });
             return { S: newS, E: newE, C: newC, D: newD };
         };
         // hd Cが'ap'かつhd Sが環境E1っと束縛変数bv Xとを持ったclosureのとき
         var executeDefFour = function (secd) {
             // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
             var firstS = secd.S.pop();
-            var e1 = firstS.closure.env;
+            var e1 = Object.create(firstS.closure.env);
             var arg = firstS.closure.func.arg;
             var body = firstS.closure.func.body;
             // derive(assoc(bv X, 2nd S)) :E1
@@ -137,31 +148,45 @@ var __assign = (this && this.__assign) || function () {
             newE[arg] = secondS["var"];
             secd.C.pop();
             var newS = [];
-            var newC = [{ "var": { name: body, val: undefined } }];
-            var newD = [{ S: secd.S, E: secd.E, C: secd.C, D: secd.D }];
+            var newC = typeof body === "string"
+                ? [{ "var": { name: body, val: undefined } }]
+                : [__assign({}, body)];
+            var newD = [
+                {
+                    S: Array.from(secd.S),
+                    E: Object.create(secd.E),
+                    C: Array.from(secd.C),
+                    D: Array.from(secd.D)
+                },
+            ];
             return { S: newS, E: newE, C: newC, D: newD };
         };
         // hd Cが記号'ap'かつhd Sがclosureでないとき
         // (S, E, C, D) -> (((1st S)(2nd S):tl(tl S)), E, tl C, D)
         var executeDefFive = function (secd) {
             // ((1st S)(2nd S):tl(tl S))ってSと変わんなくね
-            var newS = secd.S;
-            var newE = secd.E;
+            var newS = Array.from(secd.S);
+            var newE = Object.create(secd.E);
             secd.C.pop();
-            var newC = secd.C;
-            var newD = secd.D;
+            var newC = Array.from(secd.C);
+            var newD = Array.from(secd.D);
             return { S: newS, E: newE, C: newC, D: newD };
         };
         var executeDefSix = function (secd) {
-            var newS = secd.S;
-            var newE = secd.E;
-            var newD = secd.D;
+            var newS = Array.from(secd.S);
+            var newE = Object.create(secd.E);
+            var newD = Array.from(secd.D);
             // ex: headC = {app: {func: {}, var: {}}}
             var headC = secd.C.pop();
             secd.C.push("ap");
-            secd.C.push({ func: headC.app.func });
+            if (headC.app.func !== undefined) {
+                secd.C.push({ func: headC.app.func });
+            }
+            else if (headC.app.app !== undefined) {
+                secd.C.push({ app: headC.app.app });
+            }
             secd.C.push({ "var": headC.app["var"] });
-            var newC = secd.C;
+            var newC = Array.from(secd.C);
             return { S: newS, E: newE, C: newC, D: newD };
         };
         var secdLogger = function (secd) {

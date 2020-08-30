@@ -1,6 +1,9 @@
 (() => {
   const ENTER_KEY = 13;
 
+  interface ArrayConstructor {
+    from(arrayLike: any, mapFn?, thisArg?): Array<any>;
+  }
   // State of SECD Machine
   interface SECD {
     S: Array<any>;
@@ -76,35 +79,44 @@
     const executeSECD = (code: any, env: Object): string => {
       let secd: SECD = { S: new Array(), E: env, C: [code], D: new Array() };
 
-      while (secd.C.length) {
-        // define2: if head C is variable
-        if (secd.C[secd.C.length - 1].var !== undefined) {
-          console.log("Def2");
-          secd = executeDefTwo(secd);
-        } else if (secd.C[secd.C.length - 1].func !== undefined) {
-          console.log("Def3");
-          secd = executeDefThree(secd);
-        } else if (secd.C[secd.C.length - 1] === "ap") {
-          if (secd.S[secd.S.length - 1].closure !== undefined) {
-            console.log("Def4");
-            secd = executeDefFour(secd);
+      while (
+        !(
+          secd.S.length === 1 &&
+          Object.keys(secd.E).length === 0 &&
+          secd.C.length === 0 &&
+          secd.D.length === 0
+        )
+      ) {
+        while (secd.C.length) {
+          // define2: if head C is variable
+          if (secd.C[secd.C.length - 1].var !== undefined) {
+            console.log("Def2");
+            secd = executeDefTwo(secd);
+          } else if (secd.C[secd.C.length - 1].func !== undefined) {
+            console.log("Def3");
+            secd = executeDefThree(secd);
+          } else if (secd.C[secd.C.length - 1] === "ap") {
+            if (secd.S[secd.S.length - 1].closure !== undefined) {
+              console.log("Def4");
+              secd = executeDefFour(secd);
+            } else {
+              console.log("Def5");
+              secd = executeDefFive(secd);
+            }
           } else {
-            console.log("Def5");
-            secd = executeDefFive(secd);
+            console.log("Def6");
+            secd = executeDefSix(secd);
           }
-        } else {
-          console.log("Def6");
-          secd = executeDefSix(secd);
-        }
 
-        secdLogger(secd);
-      }
-      // C is Empty
-      // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
-      while (secd.D.length) {
-        console.log("Def1");
-        secd = executeDefOne(secd);
-        secdLogger(secd);
+          secdLogger(secd);
+        }
+        // C is Empty
+        // Define1: (S, E, [], (S1, E1, C1, D1)) -> (S.pop():S1, E1, C1, D1)
+        while (secd.D.length) {
+          console.log("Def1");
+          secd = executeDefOne(secd);
+          secdLogger(secd);
+        }
       }
 
       return JSON.stringify(secd.S.pop());
@@ -114,28 +126,29 @@
     // where S', E', C, D' = D
     const executeDefOne = (secd: SECD): SECD => {
       const d = secd.D.pop();
-      const newS = d.S;
-      const newE = d.E;
-      const newD = d.D;
+      const newS = Array.from(d.S);
+      const newE = Object.create(d.E);
+      const newC = Object.create(d.C);
+      const newD = Array.from(d.D);
 
       // 次の状態でもうsecd.Sは関係ない
       newS.push(secd.S.pop());
 
-      return { S: newS, E: newE, C: secd.C, D: newD } as SECD;
+      return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
     // hd C is variable
     // (location EXE:S, E, tC, D)
     const executeDefTwo = (secd: SECD): SECD => {
-      const newS = secd.S;
-      const newE = secd.E;
-      const newD = secd.D;
+      const newS = Array.from(secd.S);
+      const newE = Object.create(secd.E);
+      const newD = Array.from(secd.D);
 
       // S -> location EXE:S
       // C -> tl C
       // ex: headC = {var: {name: 'a', val: 2}}
       const headC = secd.C.pop();
-      const newC = secd.C;
+      const newC = Array.from(secd.C);
 
       if (headC.var.name in secd.E) {
         const newHeadC = { var: secd.E[headC.var.name] };
@@ -149,17 +162,22 @@
 
     // hd C is lambda expression
     const executeDefThree = (secd: SECD): SECD => {
-      const newS = secd.S;
-      const newE = secd.E;
-      const newD = secd.D;
+      const newS = Array.from(secd.S);
+      const newE = Object.create(secd.E);
+      const newD = Array.from(secd.D);
 
       // C -> tl C
       // ex: headC = {func: {arg: 'x', body: 'x'}}
       const headC = secd.C.pop();
-      const newC = secd.C;
+      const newC = Array.from(secd.C);
 
       // closureをpush: {func, env}
-      newS.push({ closure: { ...headC, env: Object.create(secd.E) } });
+      newS.push({
+        closure: {
+          func: { ...headC.func },
+          env: { ...secd.E },
+        },
+      });
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
@@ -169,7 +187,7 @@
       // ex: firstS = {closure: {func: {arg: 'x', body: 'x'}, env: {}}
       const firstS = secd.S.pop();
 
-      const e1 = firstS.closure.env;
+      const e1 = Object.create(firstS.closure.env);
       const arg = firstS.closure.func.arg;
       const body = firstS.closure.func.body;
 
@@ -182,8 +200,18 @@
       secd.C.pop();
 
       const newS = [];
-      const newC = [{ var: { name: body, val: undefined } }];
-      const newD = [<SECD>{ S: secd.S, E: secd.E, C: secd.C, D: secd.D }];
+      const newC =
+        typeof body === "string"
+          ? [{ var: { name: body, val: undefined } }]
+          : [{ ...body }];
+      const newD = [
+        <SECD>{
+          S: Array.from(secd.S),
+          E: Object.create(secd.E),
+          C: Array.from(secd.C),
+          D: Array.from(secd.D),
+        },
+      ];
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
@@ -192,26 +220,33 @@
     // (S, E, C, D) -> (((1st S)(2nd S):tl(tl S)), E, tl C, D)
     const executeDefFive = (secd: SECD): SECD => {
       // ((1st S)(2nd S):tl(tl S))ってSと変わんなくね
-      const newS = secd.S;
-      const newE = secd.E;
+      const newS = Array.from(secd.S);
+      const newE = Object.create(secd.E);
       secd.C.pop();
-      const newC = secd.C;
-      const newD = secd.D;
+      const newC = Array.from(secd.C);
+      const newD = Array.from(secd.D);
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
 
     const executeDefSix = (secd: SECD): SECD => {
-      const newS = secd.S;
-      const newE = secd.E;
-      const newD = secd.D;
+      const newS = Array.from(secd.S);
+      const newE = Object.create(secd.E);
+      const newD = Array.from(secd.D);
 
       // ex: headC = {app: {func: {}, var: {}}}
       const headC = secd.C.pop();
       secd.C.push("ap");
-      secd.C.push({ func: headC.app.func });
+
+      if (headC.app.func !== undefined) {
+        secd.C.push({ func: headC.app.func });
+      } else if (headC.app.app !== undefined) {
+        secd.C.push({ app: headC.app.app });
+      }
+
       secd.C.push({ var: headC.app.var });
-      const newC = secd.C;
+
+      const newC = Array.from(secd.C);
 
       return { S: newS, E: newE, C: newC, D: newD } as SECD;
     };
