@@ -182,16 +182,29 @@ var __assign = (this && this.__assign) || function () {
             var newS = Array.from(secd.S);
             var newE = Object.create(secd.E);
             var newD = Array.from(secd.D);
-            // ex: headC = {app: {func: {}, var: {}}}
+            // ex: headC = {app: [{func: {}}, {var: {}}]}
             var headC = secd.C.pop();
             secd.C.push("ap");
-            if (headC.app.func !== undefined) {
-                secd.C.push({ func: headC.app.func });
+            // left
+            if (headC.app[0].func !== undefined) {
+                secd.C.push({ func: headC.app[0].func });
             }
-            else if (headC.app.app !== undefined) {
-                secd.C.push({ app: headC.app.app });
+            else if (headC.app[0].app !== undefined) {
+                secd.C.push({ app: headC.app[0].app });
             }
-            secd.C.push({ "var": headC.app["var"] });
+            else if (headC.app[0]["var"] !== undefined) {
+                secd.C.push({ "var": headC.app[0]["var"] });
+            }
+            // right
+            if (headC.app[1].func !== undefined) {
+                secd.C.push({ func: headC.app[1].func });
+            }
+            else if (headC.app[1].app !== undefined) {
+                secd.C.push({ app: headC.app[1].app });
+            }
+            else if (headC.app[1]["var"] !== undefined) {
+                secd.C.push({ "var": headC.app[1]["var"] });
+            }
             var newC = Array.from(secd.C);
             return { S: newS, E: newE, C: newC, D: newD };
         };

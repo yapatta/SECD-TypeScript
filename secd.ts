@@ -212,17 +212,27 @@
       const newE = Object.create(secd.E);
       const newD = Array.from(secd.D);
 
-      // ex: headC = {app: {func: {}, var: {}}}
+      // ex: headC = {app: [{func: {}}, {var: {}}]}
       const headC = secd.C.pop();
       secd.C.push("ap");
 
-      if (headC.app.func !== undefined) {
-        secd.C.push({ func: headC.app.func });
-      } else if (headC.app.app !== undefined) {
-        secd.C.push({ app: headC.app.app });
+      // left
+      if (headC.app[0].func !== undefined) {
+        secd.C.push({ func: headC.app[0].func });
+      } else if (headC.app[0].app !== undefined) {
+        secd.C.push({ app: headC.app[0].app });
+      } else if (headC.app[0].var !== undefined) {
+        secd.C.push({ var: headC.app[0].var });
       }
 
-      secd.C.push({ var: headC.app.var });
+      // right
+      if (headC.app[1].func !== undefined) {
+        secd.C.push({ func: headC.app[1].func });
+      } else if (headC.app[1].app !== undefined) {
+        secd.C.push({ app: headC.app[1].app });
+      } else if (headC.app[1].var !== undefined) {
+        secd.C.push({ var: headC.app[1].var });
+      }
 
       const newC = Array.from(secd.C);
 
